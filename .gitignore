@@ -1,2 +1,5 @@
 *.npy
 **/*.pyc
+images/
+__pycache__/
+.vscode/

@@ -6,8 +6,8 @@ import random
 from glob import glob
 from run_model import *
 
-_IMAGE_COUNT = 201
-_ENABLE_PRINT = False
+_IMAGE_COUNT = 200
+_ENABLE_PRINT = True
 _IMAGE_PATH = "images"
 _TIME_OUT_FILE = "time.txt"
 _CLASS_OUT_FILE = os.path.join(os.getcwd(), "images", "out.txt")
@@ -78,14 +78,21 @@ if __name__ == "__main__":
     init()
     end = time.clock()
     result.append("AlexNet Model Init : {:.05f}s\n".format(end - start))
-    for i in range(0, _IMAGE_COUNT, 5):
-        if i == 0:
-            i += 1
-        start = time.clock()
-        success = batch_test(i)
-        if success:
+    images_path = glob(os.path.join(os.getcwd(), _IMAGE_PATH, "*"))
+    images_path = [image for image in images_path if is_image_file(image)]
+    if len(images_path) < _IMAGE_COUNT:
+        print("images not enough : ", len(images_path))
+        exit()
+    random.shuffle(images_path)
+    count = 0
+    start = time.clock()
+    while count<_IMAGE_COUNT:
+        image = images_path[count]
+        prob, class_name = model.run(image)
+        count+=1
+        if count==1 or count%5==0:
             end = time.clock()
             result.append("batch size : {:<10d} time : {:.05f}s\n".format(
-                i, end - start))
+                count, end - start))
     with open(_TIME_OUT_FILE, "w") as f:
         f.writelines(result)

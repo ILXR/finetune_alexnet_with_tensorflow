@@ -6,6 +6,7 @@ import random
 from glob import glob
 from run_model import *
 
+_IMAGE_COUNT = 201
 _ENABLE_PRINT = False
 _IMAGE_PATH = "images"
 _TIME_OUT_FILE = "time.txt"
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     init()
     end = time.clock()
     result.append("AlexNet Model Init : {:.05f}s\n".format(end - start))
-    for i in range(0, 101, 5):
+    for i in range(0, _IMAGE_COUNT, 5):
         if i == 0:
             i += 1
         start = time.clock()

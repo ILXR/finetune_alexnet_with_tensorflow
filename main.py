@@ -39,8 +39,13 @@ def del_file(filepath):
             shutil.rmtree(file_path)
 
 
+def is_image_file(filename):
+    return any(filename.endswith(extension) for extension in ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'])
+
+
 def batch_test(image_count, image_path=_IMAGE_PATH, out_file=_CLASS_OUT_FILE):
-    images_path = glob(os.path.join(os.getcwd(), image_path, "*.JPEG"))
+    images_path = glob(os.path.join(os.getcwd(), image_path, "*"))
+    images_path = [image for image in images_path if is_image_file(image)]
     if len(images_path) < image_count:
         print("images not enough : ", len(images_path))
         return False

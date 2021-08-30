@@ -3,15 +3,20 @@ import sys
 import time
 import random
 
+import progressbar
 from glob import glob
 from run_model import *
 
-_IMAGE_COUNT = 200
+_BAR = progressbar.ProgressBar()
+_IMAGE_COUNT = 1000
+_DIVID_COUNT = 50
 _ENABLE_PRINT = True
 _IMAGE_PATH = "images"
 _TIME_OUT_FILE = "time.txt"
 _CLASS_OUT_FILE = os.path.join(os.getcwd(), "images", "out.txt")
 _INIT_FILE = "images/zebra.jpeg"
+
+imagenet_mean = np.array([104., 117., 124.], dtype=np.float32)
 
 # 取消所有print
 if not _ENABLE_PRINT:
@@ -44,32 +49,20 @@ def is_image_file(filename):
     return any(filename.endswith(extension) for extension in ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'])
 
 
-def batch_test(image_count, image_path=_IMAGE_PATH, out_file=_CLASS_OUT_FILE):
-    images_path = glob(os.path.join(os.getcwd(), image_path, "*"))
-    images_path = [image for image in images_path if is_image_file(image)]
-    if len(images_path) < image_count:
-        print("images not enough : ", len(images_path))
-        return False
-    random.shuffle(images_path)
-
-    result = []
-    for image in images_path:
-        if image_count == 0:
-            break
-        prob, class_name = model.run(image)
-        result.append("prob : {:.5e} \t class : {}\n".format(prob, class_name))
-        image_count -= 1
-    if out_file != None:
-        with open(out_file, "w") as f:
-            for i in range(len(result)):
-                f.write(images_path[i]+"\n"+result[i])
-    return True
-
-
 def init():
     global model
     model = AlexNet_model()
     model.run(_INIT_FILE)
+
+
+def pre_precess(image_path):
+    img = cv2.imread(image_path)
+    img = cv2.resize(img.astype(np.float32), (227, 227))
+    # Subtract the ImageNet mean
+    img -= imagenet_mean
+    # Reshape as needed to feed into model
+    img = img.reshape((1, 227, 227, 3))
+    return img
 
 
 if __name__ == "__main__":
@@ -84,15 +77,24 @@ if __name__ == "__main__":
         print("images not enough : ", len(images_path))
         exit()
     random.shuffle(images_path)
-    count = 0
-    start = time.clock()
-    while count<_IMAGE_COUNT:
+    count, index, all_time = 0, 0, 0.0
+    print("Start run batch test")
+    _BAR.start()
+    while count < _IMAGE_COUNT:
+        _BAR.update(count*100/_IMAGE_COUNT)
         image = images_path[count]
-        prob, class_name = model.run(image)
-        count+=1
-        if count==1 or count%5==0:
+        img = pre_precess(image)
+        start = time.clock()
+        success = model.fast_fun(img)
+        if success:
+            count += 1
             end = time.clock()
+            all_time += end-start
+        if count % _DIVID_COUNT == 0 and count > 0 and success:
             result.append("batch size : {:<10d} time : {:.05f}s\n".format(
-                count, end - start))
+                count, all_time))
+        index += 1
     with open(_TIME_OUT_FILE, "w") as f:
         f.writelines(result)
+    _BAR.finish()
+    print("See result in ", _TIME_OUT_FILE)

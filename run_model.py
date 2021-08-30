@@ -29,13 +29,22 @@ class AlexNet_model():
             # Load the pretrained weights into the model
             self.model.load_initial_weights(self.sess)
         print("init finished\n")
+    
+    def fast_fun(self,img):
+        try:
+            # Run the session and calculate the class probability
+            probs = self.sess.run(self.softmax, feed_dict={
+                                    self.x: img, self.keep_prob: 1})[0]
+            index = np.argmax(probs)
+            return True
+        except:
+            return False
 
     def run(self, image_path):
         try:
-            print("processing image : ", image_path)
             if not os.path.exists(image_path):
                 print("file not exists\n")
-                return
+                return False
             img = cv2.imread(image_path)
             img = cv2.resize(img.astype(np.float32), (227, 227))
             # Subtract the ImageNet mean
@@ -51,10 +60,7 @@ class AlexNet_model():
             #     print("{}\t{:.6e}\t{}".format(
             #         i+1, probs[indexs[i]], class_names[indexs[i]]))
             index = np.argmax(probs)
-            print("prob : {:.5e} \tclass : {}".format(
-                  probs[index], class_names[index]))
-            print("end\n")
-            return  probs[index], class_names[index]
+            return  True
         except:
             print("error\n")
-            return None
+            return False
